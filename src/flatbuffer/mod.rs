@@ -3,6 +3,7 @@ use account_info_generated::account_info::{
     AccountInfo, AccountInfoArgs, Pubkey as AccountInfoPubkey, PubkeyArgs as AccountInfoPubkeyArgs,
 };
 use flatbuffers::FlatBufferBuilder;
+use log::info;
 use solana_geyser_plugin_interface::geyser_plugin_interface::SlotStatus;
 pub use solana_program::pubkey::Pubkey;
 
@@ -41,72 +42,86 @@ pub struct AccountUpdate {
     pub is_startup: bool,
 }
 
-impl FlatBufferSerialization {
-    pub fn serialize_account(&self, account: &AccountUpdate) -> Vec<u8> {
-        let mut builder = FlatBufferBuilder::new();
+pub fn serialize_account(account: &AccountUpdate) -> Vec<u8> {
+    let mut builder = FlatBufferBuilder::new();
 
-        let pubkey_vec = builder.create_vector(account.key.as_ref());
-        let owner_vec = builder.create_vector(account.owner.as_ref());
+    info!("serialize_account 1");
 
-        let pubkey = AccountInfoPubkey::create(
-            &mut builder,
-            &AccountInfoPubkeyArgs {
-                key: Some(pubkey_vec),
+    let pubkey_vec = builder.create_vector(account.key.as_ref());
+    let owner_vec = builder.create_vector(account.owner.as_ref());
+
+    info!("serialize_account 2");
+
+    let pubkey = AccountInfoPubkey::create(
+        &mut builder,
+        &AccountInfoPubkeyArgs {
+            key: Some(pubkey_vec),
+        },
+    );
+
+    info!("serialize_account 3");
+
+    let owner = AccountInfoPubkey::create(
+        &mut builder,
+        &AccountInfoPubkeyArgs {
+            key: Some(owner_vec),
+        },
+    );
+
+    info!("serialize_account 4");
+
+    let data = builder.create_vector(account.data.as_ref());
+
+    info!("serialize_account 5");
+
+    let account_info = AccountInfo::create(
+        &mut builder,
+        &AccountInfoArgs {
+            pubkey: Some(pubkey),
+            lamports: account.lamports,
+            owner: Some(owner),
+            executable: account.executable,
+            rent_epoch: account.rent_epoch,
+            data: Some(data),
+            write_version: account.write_version,
+            slot: account.slot,
+            is_startup: account.is_startup,
+        },
+    );
+
+    info!("serialize_account 6");
+
+    builder.finish(account_info, None);
+
+    info!("serialize_account 7");
+
+    let mut output = vec![BYTE_PREFIX_ACCOUNT];
+    output.extend(builder.finished_data().to_vec());
+
+    info!("serialize_account 8");
+
+    output
+}
+
+pub fn serialize_slot<'a>(slot: u64, status: SlotStatus) -> Vec<u8> {
+    let mut builder = FlatBufferBuilder::new();
+
+    let s = Slot::create(
+        &mut builder,
+        &SlotArgs {
+            slot,
+            status: match status {
+                SlotStatus::Processed => 0,
+                SlotStatus::Rooted => 1,
+                SlotStatus::Confirmed => 2,
             },
-        );
+        },
+    );
 
-        let owner = AccountInfoPubkey::create(
-            &mut builder,
-            &AccountInfoPubkeyArgs {
-                key: Some(owner_vec),
-            },
-        );
+    builder.finish(s, None);
 
-        let data = builder.create_vector(account.data.as_ref());
+    let mut output = vec![BYTE_PREFIX_SLOT];
+    output.extend(builder.finished_data().to_vec());
 
-        let account_info = AccountInfo::create(
-            &mut builder,
-            &AccountInfoArgs {
-                pubkey: Some(pubkey),
-                lamports: account.lamports,
-                owner: Some(owner),
-                executable: account.executable,
-                rent_epoch: account.rent_epoch,
-                data: Some(data),
-                write_version: account.write_version,
-                slot: account.slot,
-                is_startup: account.is_startup,
-            },
-        );
-
-        builder.finish(account_info, None);
-
-        let mut output = vec![BYTE_PREFIX_ACCOUNT];
-        output.extend(builder.finished_data().to_vec());
-
-        output
-    }
-
-    pub fn serialize_slot<'a>(&self, slot: u64, status: SlotStatus) -> Vec<u8> {
-        let mut builder = FlatBufferBuilder::new();
-
-        let s = Slot::create(
-            &mut builder,
-            &SlotArgs {
-                slot,
-                status: match status {
-                    SlotStatus::Processed => 0,
-                    SlotStatus::Rooted => 1,
-                    SlotStatus::Confirmed => 2,
-                },
-            },
-        );
-
-        builder.finish(s, None);
-
-        let mut output = vec![BYTE_PREFIX_SLOT];
-        output.extend(builder.finished_data().to_vec());
-
-        output
-    }
+    output
 }

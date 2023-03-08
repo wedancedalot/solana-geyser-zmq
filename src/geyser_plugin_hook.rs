@@ -115,8 +115,7 @@ impl GeyserPlugin for GeyserPluginHook {
                         }
                     })?);
 
-                let serializer = flatbuffer::FlatBufferSerialization {};
-                let data = serializer.serialize_account(&AccountUpdate {
+                let data = flatbuffer::serialize_account(&AccountUpdate {
                     key,
                     lamports,
                     owner,
@@ -154,8 +153,7 @@ impl GeyserPlugin for GeyserPluginHook {
     ) -> Result<()> {
         info!("[update_slot_status]");
 
-        let serializer = flatbuffer::FlatBufferSerialization {};
-        let data = serializer.serialize_slot(slot, status);
+        let data = flatbuffer::serialize_slot(slot, status);
         info!("[update_slot_status: serialized]");
 
         self.send(data);

@@ -1,20 +1,13 @@
-use std::{
-    sync::{Arc, Mutex},
-    vec,
+use crate::{
+    config::Config,
+    flatbuffer::{self, AccountUpdate},
 };
-
 use log::info;
+use solana_geyser_plugin_interface::geyser_plugin_interface::*;
+use solana_program::pubkey::Pubkey;
+use std::sync::{Arc, Mutex};
 
-use crate::{config::Config, flatbuffer};
-
-use {
-    solana_geyser_plugin_interface::geyser_plugin_interface::{
-        GeyserPlugin, GeyserPluginError, ReplicaAccountInfoVersions, ReplicaBlockInfoVersions,
-        ReplicaTransactionInfoVersions, SlotStatus,
-    },
-    std::fmt::{Debug, Formatter},
-};
-
+use std::fmt::{Debug, Formatter};
 /// This is the main object returned bu our dynamic library in entrypoint.rs
 #[derive(Default)]
 pub struct GeyserPluginHook {
@@ -46,10 +39,7 @@ impl GeyserPlugin for GeyserPluginHook {
     /// of the config file. The config must be in JSON format and
     /// include a field "libpath" indicating the full path
     /// name of the shared library implementing this interface.
-    fn on_load(
-        &mut self,
-        config_file: &str,
-    ) -> solana_geyser_plugin_interface::geyser_plugin_interface::Result<()> {
+    fn on_load(&mut self, config_file: &str) -> Result<()> {
         let cfg = Config::read(config_file).unwrap();
 
         solana_logger::setup_with_default("info");
@@ -87,7 +77,7 @@ impl GeyserPlugin for GeyserPluginHook {
         account: ReplicaAccountInfoVersions,
         slot: u64,
         is_startup: bool,
-    ) -> solana_geyser_plugin_interface::geyser_plugin_interface::Result<()> {
+    ) -> Result<()> {
         match account {
             ReplicaAccountInfoVersions::V0_0_1(_) => {
                 info!("[update_account V0_0_1]");
@@ -99,23 +89,58 @@ impl GeyserPlugin for GeyserPluginHook {
             ReplicaAccountInfoVersions::V0_0_2(acc) => {
                 info!("[update_account V0_0_2]");
 
-                // let serializer = flatbuffer::FlatBufferSerialization {};
-                // let data = serializer.serialize_account(acc, slot, is_startup);
-                // info!("[update_account V0_0_2: serialized]");
+                let ReplicaAccountInfoV2 {
+                    pubkey,
+                    lamports,
+                    owner,
+                    executable,
+                    rent_epoch,
+                    data,
+                    write_version,
+                    txn_signature: _,
+                } = *acc;
 
-                self.send(vec![0]);
+                let key = Pubkey::new_from_array(pubkey.try_into().map_err(
+                    |_| -> GeyserPluginError {
+                        GeyserPluginError::AccountsUpdateError {
+                            msg: "cannot decode pubkey".to_string(),
+                        }
+                    },
+                )?);
+
+                let owner =
+                    Pubkey::new_from_array(owner.try_into().map_err(|_| -> GeyserPluginError {
+                        GeyserPluginError::AccountsUpdateError {
+                            msg: "cannot decode owner".to_string(),
+                        }
+                    })?);
+
+                let serializer = flatbuffer::FlatBufferSerialization {};
+                let data = serializer.serialize_account(&AccountUpdate {
+                    key,
+                    lamports,
+                    owner,
+                    executable,
+                    rent_epoch,
+                    data: data.to_owned(),
+                    write_version,
+                    slot,
+                    is_startup,
+                });
+                info!("[update_account V0_0_2: serialized]");
+
+                self.send(data);
 
                 info!("[update_account V0_0_2: sent]");
+
+                Ok(())
             }
         }
-        Ok(())
     }
 
     /// Lifecycle: called when all accounts have been notified when the validator
     /// restores the AccountsDb from snapshots at startup.
-    fn notify_end_of_startup(
-        &mut self,
-    ) -> solana_geyser_plugin_interface::geyser_plugin_interface::Result<()> {
+    fn notify_end_of_startup(&mut self) -> Result<()> {
         info!("[notify_end_of_startup]");
         Ok(())
     }
@@ -126,14 +151,14 @@ impl GeyserPlugin for GeyserPluginHook {
         slot: u64,
         _parent: Option<u64>,
         status: SlotStatus,
-    ) -> solana_geyser_plugin_interface::geyser_plugin_interface::Result<()> {
+    ) -> Result<()> {
         info!("[update_slot_status]");
 
-        // let serializer = flatbuffer::FlatBufferSerialization {};
-        // let data = serializer.serialize_slot(slot, status);
-        // info!("[update_slot_status: serialized]");
+        let serializer = flatbuffer::FlatBufferSerialization {};
+        let data = serializer.serialize_slot(slot, status);
+        info!("[update_slot_status: serialized]");
 
-        self.send(vec![1]);
+        self.send(data);
         info!("[update_slot_status: sent]");
 
         Ok(())
@@ -145,7 +170,7 @@ impl GeyserPlugin for GeyserPluginHook {
         &mut self,
         transaction: ReplicaTransactionInfoVersions,
         slot: u64,
-    ) -> solana_geyser_plugin_interface::geyser_plugin_interface::Result<()> {
+    ) -> Result<()> {
         // match transaction {
         //     ReplicaTransactionInfoVersions::V0_0_1(transaction_info) => {
         // info!("[notify_transaction], transaction:{:#?}, slot:{:#?}", transaction_info.is_vote, slot);
@@ -154,10 +179,7 @@ impl GeyserPlugin for GeyserPluginHook {
         Ok(())
     }
 
-    fn notify_block_metadata(
-        &mut self,
-        _blockinfo: ReplicaBlockInfoVersions,
-    ) -> solana_geyser_plugin_interface::geyser_plugin_interface::Result<()> {
+    fn notify_block_metadata(&mut self, _blockinfo: ReplicaBlockInfoVersions) -> Result<()> {
         // match blockinfo {
         // ReplicaBlockInfoVersions::V0_0_1(blockinfo) => {
         // info!("[notify_block_metadata], block_info:{:#?}", blockinfo);

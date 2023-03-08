@@ -3,7 +3,7 @@ use account_info_generated::account_info::{
     AccountInfo, AccountInfoArgs, Pubkey as AccountInfoPubkey, PubkeyArgs as AccountInfoPubkeyArgs,
 };
 use flatbuffers::FlatBufferBuilder;
-use solana_geyser_plugin_interface::geyser_plugin_interface::{ReplicaAccountInfoV2, SlotStatus};
+use solana_geyser_plugin_interface::geyser_plugin_interface::SlotStatus;
 pub use solana_program::pubkey::Pubkey;
 
 use self::slot_generated::slot::{Slot, SlotArgs};
@@ -20,20 +20,33 @@ pub struct FlatBufferSerialization {}
 const BYTE_PREFIX_ACCOUNT: u8 = 0;
 const BYTE_PREFIX_SLOT: u8 = 1;
 
-impl FlatBufferSerialization {
-    pub fn serialize_account<'a>(
-        &self,
-        account: &'a ReplicaAccountInfoV2<'a>,
-        slot: u64,
-        is_startup: bool,
-    ) -> Vec<u8> {
-        let key = Pubkey::new_from_array(account.pubkey.try_into().unwrap());
-        let owner = Pubkey::new_from_array(account.owner.try_into().unwrap());
+pub struct AccountUpdate {
+    /// The account's public key
+    pub key: Pubkey,
+    /// The lamport balance of the account
+    pub lamports: u64,
+    /// The Solana program controlling this account
+    pub owner: Pubkey,
+    /// True if the account's data is an executable smart contract
+    pub executable: bool,
+    /// The next epoch for which this account will owe rent
+    pub rent_epoch: u64,
+    /// The binary data stored on this account
+    pub data: Vec<u8>,
+    /// Monotonic-increasing counter for sequencing on-chain writes
+    pub write_version: u64,
+    /// The slot in which this account was updated
+    pub slot: u64,
+    /// True if this update was triggered by a validator startup
+    pub is_startup: bool,
+}
 
+impl FlatBufferSerialization {
+    pub fn serialize_account(&self, account: &AccountUpdate) -> Vec<u8> {
         let mut builder = FlatBufferBuilder::new();
 
-        let pubkey_vec = builder.create_vector(key.as_ref());
-        let owner_vec = builder.create_vector(owner.as_ref());
+        let pubkey_vec = builder.create_vector(account.key.as_ref());
+        let owner_vec = builder.create_vector(account.owner.as_ref());
 
         let pubkey = AccountInfoPubkey::create(
             &mut builder,
@@ -61,8 +74,8 @@ impl FlatBufferSerialization {
                 rent_epoch: account.rent_epoch,
                 data: Some(data),
                 write_version: account.write_version,
-                slot: slot,
-                is_startup: is_startup,
+                slot: account.slot,
+                is_startup: account.is_startup,
             },
         );
 

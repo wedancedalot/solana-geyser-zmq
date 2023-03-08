@@ -16,13 +16,13 @@ pub struct GeyserPluginHook {
 
 impl GeyserPluginHook {
     fn send<'a>(&mut self, data: Vec<u8>) {
-        self.socket
-            .clone()
-            .unwrap()
-            .lock()
-            .unwrap()
-            .send(data, 0)
-            .unwrap();
+        // self.socket
+        //     .clone()
+        //     .unwrap()
+        //     .lock()
+        //     .unwrap()
+        //     .send(data, 0)
+        //     .unwrap();
     }
 }
 

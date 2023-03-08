@@ -3,7 +3,6 @@ use account_info_generated::account_info::{
     AccountInfo, AccountInfoArgs, Pubkey as AccountInfoPubkey, PubkeyArgs as AccountInfoPubkeyArgs,
 };
 use flatbuffers::FlatBufferBuilder;
-use log::info;
 use solana_geyser_plugin_interface::geyser_plugin_interface::SlotStatus;
 pub use solana_program::pubkey::Pubkey;
 
@@ -43,16 +42,10 @@ pub struct AccountUpdate {
 }
 
 pub fn serialize_account(account: &AccountUpdate) -> Vec<u8> {
-    info!("serialize_account 0");
-
     let mut builder = FlatBufferBuilder::new();
-
-    info!("serialize_account 1");
 
     let pubkey_vec = builder.create_vector(account.key.as_ref());
     let owner_vec = builder.create_vector(account.owner.as_ref());
-
-    info!("serialize_account 2");
 
     let pubkey = AccountInfoPubkey::create(
         &mut builder,
@@ -61,8 +54,6 @@ pub fn serialize_account(account: &AccountUpdate) -> Vec<u8> {
         },
     );
 
-    info!("serialize_account 3");
-
     let owner = AccountInfoPubkey::create(
         &mut builder,
         &AccountInfoPubkeyArgs {
@@ -70,11 +61,7 @@ pub fn serialize_account(account: &AccountUpdate) -> Vec<u8> {
         },
     );
 
-    info!("serialize_account 4");
-
     let data = builder.create_vector(account.data.as_ref());
-
-    info!("serialize_account 5");
 
     let account_info = AccountInfo::create(
         &mut builder,
@@ -91,16 +78,10 @@ pub fn serialize_account(account: &AccountUpdate) -> Vec<u8> {
         },
     );
 
-    info!("serialize_account 6");
-
     builder.finish(account_info, None);
-
-    info!("serialize_account 7");
 
     let mut output = vec![BYTE_PREFIX_ACCOUNT];
     output.extend(builder.finished_data().to_vec());
-
-    info!("serialize_account 8");
 
     output
 }

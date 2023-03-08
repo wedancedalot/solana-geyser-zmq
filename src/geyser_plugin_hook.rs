@@ -5,7 +5,10 @@ use crate::{
 use log::info;
 use solana_geyser_plugin_interface::geyser_plugin_interface::*;
 use solana_program::pubkey::Pubkey;
-use std::sync::{Arc, Mutex};
+use std::{
+    sync::{Arc, Mutex},
+    vec,
+};
 
 use std::fmt::{Debug, Formatter};
 /// This is the main object returned bu our dynamic library in entrypoint.rs
@@ -89,50 +92,50 @@ impl GeyserPlugin for GeyserPluginHook {
             ReplicaAccountInfoVersions::V0_0_2(acc) => {
                 info!("[update_account V0_0_2]");
 
-                let ReplicaAccountInfoV2 {
-                    pubkey,
-                    lamports,
-                    owner,
-                    executable,
-                    rent_epoch,
-                    data,
-                    write_version,
-                    txn_signature: _,
-                } = *acc;
+                // let ReplicaAccountInfoV2 {
+                //     pubkey,
+                //     lamports,
+                //     owner,
+                //     executable,
+                //     rent_epoch,
+                //     data,
+                //     write_version,
+                //     txn_signature: _,
+                // } = *acc;
 
-                info!("[update_account V0_0_2] 1");
+                // info!("[update_account V0_0_2] 1");
 
-                let key = Pubkey::new_from_array(pubkey.try_into().map_err(
-                    |_| -> GeyserPluginError {
-                        info!("[update_account V0_0_2] 1.1");
+                // let key = Pubkey::new_from_array(pubkey.try_into().map_err(
+                //     |_| -> GeyserPluginError {
+                //         info!("[update_account V0_0_2] 1.1");
 
-                        GeyserPluginError::AccountsUpdateError {
-                            msg: "cannot decode pubkey".to_string(),
-                        }
-                    },
-                )?);
+                //         GeyserPluginError::AccountsUpdateError {
+                //             msg: "cannot decode pubkey".to_string(),
+                //         }
+                //     },
+                // )?);
 
-                info!("[update_account V0_0_2] 2");
+                // info!("[update_account V0_0_2] 2");
 
-                let owner =
-                    Pubkey::new_from_array(owner.try_into().map_err(|_| -> GeyserPluginError {
-                        info!("[update_account V0_0_2] 2.1");
+                // let owner =
+                //     Pubkey::new_from_array(owner.try_into().map_err(|_| -> GeyserPluginError {
+                //         info!("[update_account V0_0_2] 2.1");
 
-                        GeyserPluginError::AccountsUpdateError {
-                            msg: "cannot decode owner".to_string(),
-                        }
-                    })?);
+                //         GeyserPluginError::AccountsUpdateError {
+                //             msg: "cannot decode owner".to_string(),
+                //         }
+                //     })?);
 
-                info!("[update_account V0_0_2] 2");
+                // info!("[update_account V0_0_2] 2");
 
                 let data = flatbuffer::serialize_account(&AccountUpdate {
-                    key,
-                    lamports,
-                    owner,
-                    executable,
-                    rent_epoch,
-                    data: data.to_owned(),
-                    write_version,
+                    key: Pubkey::new_unique(),
+                    lamports: 100,
+                    owner: Pubkey::new_unique(),
+                    executable: false,
+                    rent_epoch: 800,
+                    data: vec![],
+                    write_version: 1,
                     slot,
                     is_startup,
                 });

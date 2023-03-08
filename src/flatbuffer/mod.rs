@@ -43,6 +43,8 @@ pub struct AccountUpdate {
 }
 
 pub fn serialize_account(account: &AccountUpdate) -> Vec<u8> {
+    info!("serialize_account 0");
+
     let mut builder = FlatBufferBuilder::new();
 
     info!("serialize_account 1");

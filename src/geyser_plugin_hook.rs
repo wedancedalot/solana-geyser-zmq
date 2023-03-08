@@ -100,20 +100,30 @@ impl GeyserPlugin for GeyserPluginHook {
                     txn_signature: _,
                 } = *acc;
 
+                info!("[update_account V0_0_2] 1");
+
                 let key = Pubkey::new_from_array(pubkey.try_into().map_err(
                     |_| -> GeyserPluginError {
+                        info!("[update_account V0_0_2] 1.1");
+
                         GeyserPluginError::AccountsUpdateError {
                             msg: "cannot decode pubkey".to_string(),
                         }
                     },
                 )?);
 
+                info!("[update_account V0_0_2] 2");
+
                 let owner =
                     Pubkey::new_from_array(owner.try_into().map_err(|_| -> GeyserPluginError {
+                        info!("[update_account V0_0_2] 2.1");
+
                         GeyserPluginError::AccountsUpdateError {
                             msg: "cannot decode owner".to_string(),
                         }
                     })?);
+
+                info!("[update_account V0_0_2] 2");
 
                 let data = flatbuffer::serialize_account(&AccountUpdate {
                     key,

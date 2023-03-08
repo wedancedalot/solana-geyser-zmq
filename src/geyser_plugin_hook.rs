@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    sync::{Arc, Mutex},
+    vec,
+};
 
 use log::info;
 
@@ -96,11 +99,12 @@ impl GeyserPlugin for GeyserPluginHook {
             ReplicaAccountInfoVersions::V0_0_2(acc) => {
                 info!("[update_account V0_0_2]");
 
-                let serializer = flatbuffer::FlatBufferSerialization {};
-                let data = serializer.serialize_account(acc, slot, is_startup);
-                info!("[update_account V0_0_2: serialized]");
+                // let serializer = flatbuffer::FlatBufferSerialization {};
+                // let data = serializer.serialize_account(acc, slot, is_startup);
+                // info!("[update_account V0_0_2: serialized]");
 
-                self.send(data);
+                self.send(vec![0]);
+
                 info!("[update_account V0_0_2: sent]");
             }
         }
@@ -125,11 +129,11 @@ impl GeyserPlugin for GeyserPluginHook {
     ) -> solana_geyser_plugin_interface::geyser_plugin_interface::Result<()> {
         info!("[update_slot_status]");
 
-        let serializer = flatbuffer::FlatBufferSerialization {};
-        let data = serializer.serialize_slot(slot, status);
-        info!("[update_slot_status: serialized]");
+        // let serializer = flatbuffer::FlatBufferSerialization {};
+        // let data = serializer.serialize_slot(slot, status);
+        // info!("[update_slot_status: serialized]");
 
-        self.send(data);
+        self.send(vec![1]);
         info!("[update_slot_status: sent]");
 
         Ok(())

@@ -15,7 +15,7 @@ pub struct GeyserPluginHook {
 }
 
 impl GeyserPluginHook {
-    fn send<'a>(&mut self, data: Vec<u8>) {
+    fn send<'a>(&mut self, _data: Vec<u8>) {
         // self.socket
         //     .clone()
         //     .unwrap()
@@ -78,15 +78,27 @@ impl GeyserPlugin for GeyserPluginHook {
         slot: u64,
         is_startup: bool,
     ) -> Result<()> {
-        if is_startup {
-            return Ok(());
-        }
+        // if is_startup {
+        // return Ok(());
+        // }
 
         match account {
             ReplicaAccountInfoVersions::V0_0_1(acc) => {
                 info!("[update_account]");
 
-                let key = Pubkey::new_from_array(acc.pubkey.try_into().map_err(
+                let ReplicaAccountInfo {
+                    pubkey,
+                    lamports,
+                    owner,
+                    executable,
+                    rent_epoch,
+                    data,
+                    write_version,
+                } = *acc;
+
+                info!("[update_account1]");
+
+                let key = Pubkey::new_from_array(pubkey.try_into().map_err(
                     |_| -> GeyserPluginError {
                         GeyserPluginError::AccountsUpdateError {
                             msg: "cannot decode pubkey".to_string(),
@@ -94,25 +106,27 @@ impl GeyserPlugin for GeyserPluginHook {
                     },
                 )?);
 
-                let owner = Pubkey::new_from_array(acc.owner.try_into().map_err(
-                    |_| -> GeyserPluginError {
+                let owner =
+                    Pubkey::new_from_array(owner.try_into().map_err(|_| -> GeyserPluginError {
                         GeyserPluginError::AccountsUpdateError {
                             msg: "cannot decode owner".to_string(),
                         }
-                    },
-                )?);
+                    })?);
 
-                let data = flatbuffer::serialize_account(&AccountUpdate {
+                let data = data.to_owned();
+
+                let data = flatbuffer::serialize_account(AccountUpdate {
                     key,
-                    lamports: acc.lamports,
+                    lamports,
                     owner,
-                    executable: acc.executable,
-                    rent_epoch: acc.rent_epoch,
-                    data: acc.data.to_vec(),
-                    write_version: acc.write_version,
+                    executable,
+                    rent_epoch,
+                    data,
+                    write_version,
                     slot,
                     is_startup,
                 });
+
                 info!("[update_account: serialized]");
 
                 self.send(data);

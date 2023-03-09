@@ -78,9 +78,9 @@ impl GeyserPlugin for GeyserPluginHook {
         slot: u64,
         is_startup: bool,
     ) -> Result<()> {
-        if is_startup {
-            return Ok(());
-        }
+        // if is_startup {
+        // return Ok(());
+        // }
 
         match account {
             ReplicaAccountInfoVersions::V0_0_1(acc) => {

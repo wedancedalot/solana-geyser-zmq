@@ -41,7 +41,7 @@ pub struct AccountUpdate {
     pub is_startup: bool,
 }
 
-pub fn serialize_account(account: AccountUpdate) -> Vec<u8> {
+pub fn serialize_account(account: &AccountUpdate) -> Vec<u8> {
     let mut builder = FlatBufferBuilder::new();
 
     let pubkey_vec = builder.create_vector(account.key.as_ref());
